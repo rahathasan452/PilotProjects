@@ -49,6 +49,7 @@ const int EEPROM_DATA_START  = 2;
 // Mode 4 state tracking
 char keyToLearn = 0;
 unsigned long learnStartTime = 0;
+bool sawPulseOnPin = false;
 
 // Function Prototypes
 char scanKeypad();
@@ -93,6 +94,10 @@ void setup() {
 
   // Initialize KY-005 IR Transmitter on Pin 3
   IrSender.begin(IR_SEND_PIN);
+
+  // Diagnostic check for IR Receiver Pin 2
+  pinMode(IR_RECEIVE_PIN, INPUT_PULLUP); // ensure weak pull-up so open pins don't float
+  IrReceiver.start();
 
   Serial.println(F("=============================================================="));
   Serial.println(F("    UNIVERSAL & SONY BRAVIA SMART REMOTE CONTROLLER           "));
@@ -381,36 +386,59 @@ void handleMode4_Learn(char key) {
     if (idx >= 0) {
       keyToLearn = key;
       learnStartTime = millis();
+      sawPulseOnPin = false;
 
       Serial.print(F("Target Key '"));
       Serial.print(keyToLearn);
       Serial.println(F("' selected for programming!"));
-      Serial.println(F(">>> Point your original TV remote at IR Receiver (Pin 2) and press the button NOW..."));
+      Serial.println(F(">>> Point your original TV remote at IR Receiver (Pin 2) and press the button NOW... (25s window)"));
+      Serial.println(F("    (Watch Pin 13 LED: it will flicker whenever IR light is sensed!)"));
 
-      // Clear any prior pending frame
-      IrReceiver.resume();
-
-      // Turn LED solid ON to indicate listening state
-      digitalWrite(STATUS_LED_PIN, HIGH);
+      // Ensure IR timer interrupts are active and clear stale buffer
+      IrReceiver.start();
     }
     return;
   }
 
   // When waiting for incoming IR signal from original TV remote
   if (keyToLearn != 0) {
-    // 15-second timeout safeguard
-    if (millis() - learnStartTime > 15000) {
-      Serial.print(F("[TIMEOUT] No IR signal received for Key '"));
+    // Check if any electrical signal / pulse arrives on Pin 2
+    if (digitalRead(IR_RECEIVE_PIN) == LOW) {
+      sawPulseOnPin = true;
+    }
+
+    // 25-second timeout safeguard
+    if (millis() - learnStartTime > 25000) {
+      Serial.print(F("\n[TIMEOUT] No valid IR signal was decoded for Key '"));
       Serial.print(keyToLearn);
       Serial.println(F("'. Learning cancelled."));
-      digitalWrite(STATUS_LED_PIN, LOW);
+
+      if (!sawPulseOnPin) {
+        Serial.println(F("-----------------------------------------------------------------"));
+        Serial.println(F(">>> [DIAGNOSTIC] Zero electrical pulses were detected on Pin 2!"));
+        Serial.println(F("    Possible causes to check:"));
+        Serial.println(F("    1. PIN CHECK: Is the IR Receiver 'OUT' / 'S' connected to Digital Pin 2?"));
+        Serial.println(F("    2. PINOUT CHECK:"));
+        Serial.println(F("       - If using VS1838B (facing front lens): Pin 1(Left)=OUT, Pin 2(Mid)=GND, Pin 3(Right)=5V."));
+        Serial.println(F("       - If using KY-022: 'S'->Pin 2, '+'->5V, '-'->GND."));
+        Serial.println(F("    3. REMOTE CHECK: Is your remote Infrared?"));
+        Serial.println(F("       (Tip: Look at the remote's LED through your phone camera and press a button;"));
+        Serial.println(F("        if it flashes purple/pink, it's IR. If not, it is Bluetooth/RF)."));
+        Serial.println(F("-----------------------------------------------------------------"));
+      } else {
+        Serial.println(F("-----------------------------------------------------------------"));
+        Serial.println(F(">>> [DIAGNOSTIC] Electrical pulses WERE detected on Pin 2,"));
+        Serial.println(F("    but could not be recognized as a standard TV protocol."));
+        Serial.println(F("    Please hold the remote 10-15cm away facing the receiver directly,"));
+        Serial.println(F("    and press the button firmly once."));
+        Serial.println(F("-----------------------------------------------------------------"));
+      }
+
       keyToLearn = 0;
       return;
     }
 
     if (IrReceiver.decode()) {
-      digitalWrite(STATUS_LED_PIN, LOW);
-
       // Filter out repeat frames
       if (IrReceiver.decodedIRData.flags & IRDATA_FLAGS_IS_REPEAT) {
         IrReceiver.resume();
@@ -464,6 +492,19 @@ void handleMode4_Learn(char key) {
       }
 
       keyToLearn = 0;
+      IrReceiver.resume();
+    }
+  } else {
+    // If user presses their remote before selecting a keypad key:
+    if (IrReceiver.decode()) {
+      Serial.println(F("\n[IR Signal Received from Remote!]"));
+      Serial.print(F("Detected Protocol: "));
+      Serial.print(getProtocolString(IrReceiver.decodedIRData.protocol));
+      Serial.print(F(" | Addr: 0x"));
+      Serial.print(IrReceiver.decodedIRData.address, HEX);
+      Serial.print(F(" | Cmd: 0x"));
+      Serial.println(IrReceiver.decodedIRData.command, HEX);
+      Serial.println(F(">>> Please press a KEYPAD key (e.g. '1', '2', 'A') FIRST to choose where to save it!"));
       IrReceiver.resume();
     }
   }
