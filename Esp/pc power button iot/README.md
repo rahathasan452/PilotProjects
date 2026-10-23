@@ -4,7 +4,16 @@ Controls PC power remotely via ESP8266 and PC817 optocoupler, maintaining 100% e
 
 ---
 
-## 1. Circuit Schematic
+## 1. Hardware Setup & Reference Photos
+
+| Bench Test Setup | Chassis Installation |
+| :---: | :---: |
+| ![Bench Test Setup](assets/bench_test_setup.jpg) | ![Chassis Installation](assets/pc_case_wiring.jpg) |
+| *NodeMCU, resistor, PC817 optocoupler & bench jumper leads* | *Installed inside PC case spliced with POWER SW header* |
+
+---
+
+## 2. Circuit Schematic
 
 ```mermaid
 flowchart LR
@@ -16,17 +25,17 @@ flowchart LR
     subgraph Circuit["Breadboard Circuit"]
         R["330Ω Resistor"]
         D1 --> R
-      
+        
         subgraph PC817["PC817 Optocoupler"]
             P1["Pin 1 (Anode / Dot)"]
             P2["Pin 2 (Cathode)"]
             P4["Pin 4 (Collector)"]
             P3["Pin 3 (Emitter)"]
-          
+            
             P1 -.->|IR Light Barrier| P4
             P2 -.-> P3
         end
-      
+        
         R --> P1
         P2 --> GND
     end
@@ -34,7 +43,7 @@ flowchart LR
     subgraph Motherboard["PC Motherboard Front Panel"]
         MB_PWR["PWR_SW (+) Header"]
         MB_GND["PWR_SW (-) Header"]
-      
+        
         P4 --> MB_PWR
         P3 --> MB_GND
     end
@@ -46,7 +55,7 @@ flowchart LR
 
 ---
 
-## 2. PC817 (817BN) Pinout
+## 3. PC817 (817BN) Pinout
 
 ```mermaid
 flowchart TD
@@ -72,23 +81,23 @@ flowchart TD
 
 ---
 
-## 3. Wiring Quick Reference
+## 4. Wiring Quick Reference
 
-| From                          | To                               | Component / Wire      | Role                      |
-| :---------------------------- | :------------------------------- | :-------------------- | :------------------------ |
-| **ESP8266 D1 (GPIO 5)** | **PC817 Pin 1**            | 220Ω–470Ω Resistor | Safe trigger signal       |
-| **ESP8266 GND**         | **PC817 Pin 2**            | Jumper wire           | Return ground             |
-| **PC817 Pin 4**         | **Motherboard PWR_SW (+)** | DuPont M-F            | Collector (3.3V sense)    |
-| **PC817 Pin 3**         | **Motherboard PWR_SW (-)** | DuPont M-F            | Emitter (Motherboard GND) |
+| From | To | Component / Wire | Role |
+| :--- | :--- | :--- | :--- |
+| **ESP8266 D1 (GPIO 5)** | **PC817 Pin 1** | 220Ω–470Ω Resistor | Safe trigger signal |
+| **ESP8266 GND** | **PC817 Pin 2** | Jumper wire | Return ground |
+| **PC817 Pin 4** | **Motherboard PWR_SW (+)** | DuPont M-F | Collector (3.3V sense) |
+| **PC817 Pin 3** | **Motherboard PWR_SW (-)** | DuPont M-F | Emitter (Motherboard GND) |
 
 > **Why D1 (GPIO 5)?** D1 and D2 are boot-safe. Pins D0, D3, D4, and D8 glitch during boot or ESP reset, which would accidentally trigger your PC.
 
 ---
 
-## 4. Firmware (`pc_on_iot.ino`)
+## 5. Firmware (`pc_on_iot.ino`)
 
 ```cpp
-#define BLYNK_TEMPLATE_ID "T"
+#define BLYNK_TEMPLATE_ID "TMPL6Hzn5xBxV"
 #define BLYNK_TEMPLATE_NAME "PC Power Control"
 #define BLYNK_AUTH_TOKEN "Your_Blynk_Auth_Token"
 
@@ -139,7 +148,7 @@ void loop() {
 
 ---
 
-## 5. Configuration & Quick Checklist
+## 6. Configuration & Quick Checklist
 
 1. **Blynk App:** Add Button widget $\to$ Datastream `V0` $\to$ Mode: **PUSH**.
 2. **Motherboard BIOS:** Disable **ErP**, Enable **USB Power in Soft Off (S5)** (keeps ESP powered when PC is off).
