@@ -1,0 +1,39 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run ALU Testbench",
+            "type": "shell",
+            "command": "C:\\iverilog\\bin\\iverilog.exe -o sim\\alu_sim.vvp rtl\\alu.v tb\\alu_tb.v && C:\\iverilog\\bin\\vvp.exe sim\\alu_sim.vvp",
+            "options": {
+                "cwd": "${workspaceFolder}/parameterized_alu"
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Open Waveform in GTKWave",
+            "type": "shell",
+            "command": "start C:\\iverilog\\gtkwave\\bin\\gtkwave.exe sim\\dump.vcd",
+            "options": {
+                "cwd": "${workspaceFolder}/parameterized_alu"
+            },
+            "group": "none",
+            "presentation": {
+                "echo": false,
+                "reveal": "silent"
+            },
+            "problemMatcher": []
+        }
+    ]
+}
+

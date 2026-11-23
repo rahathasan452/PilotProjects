@@ -1,0 +1,7 @@
+{
+    "terohdl.linting.verilog.linter": "iverilog",
+    "terohdl.linting.verilog.arguments": "-g2012",
+    "terohdl.tools.path": "C:\\iverilog\\bin",
+    "verilog.linting.linter": "iverilog",
+    "verilog.linting.iverilog.arguments": "-g2012"
+}
